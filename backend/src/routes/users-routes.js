@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { login,register } from "../controllers/user.controller.js";
+import { login,register,addToHistory,add_to_activity } from "../controllers/user.controller.js";
 import {User} from "../models/user-model.js";
+
 const router=Router();
 router.route("/login").post(login)
 router.route("/register",(req,res)=>{
