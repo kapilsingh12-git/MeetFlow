@@ -1,87 +1,153 @@
+/* ---------- Landing page ---------- */
 .landingPageContainer {
   width: 100vw;
-  height: 100vh;
-  background: url("/public/background.png");
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(5, 6, 15, 0.55) 0%, rgba(5, 6, 15, 0.9) 100%),
+    url("/background.png");
   background-repeat: no-repeat;
   background-size: cover;
+  background-position: center;
   color: white;
 }
 
 .landingPageContainer nav {
-  padding-inline: 1.2rem;
+  padding-inline: clamp(1.2rem, 4vw, 3rem);
   padding-block: 1.6rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-
 }
 
 .landingPageContainer nav h2 {
-  font-size: 1.8rem;
-  font-weight: 500;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .landingPageContainer nav .navlist {
   display: flex;
-  gap: 1.6rem;
-  cursor: pointer;
+  gap: 1.8rem;
+  align-items: center;
+}
 
+.landingPageContainer nav .navlist p {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.15s ease;
+}
+
+.landingPageContainer nav .navlist p:hover {
+  color: white;
+}
+
+.landingPageContainer nav .navlist div[role='button'] {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  padding: 0.55rem 1.3rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 95, 57, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.landingPageContainer nav .navlist div[role='button']:hover {
+  transform: translateY(-2px);
 }
 
 .landingMainContainer {
   display: flex;
+  flex-wrap: wrap-reverse;
   justify-content: space-between;
-  padding-inline: 3rem;
-  height: 80vh;
+  gap: 2rem;
+  padding-inline: clamp(1.5rem, 6vw, 4rem);
+  min-height: 75vh;
   align-items: center;
 }
 
 .landingMainContainer>div:nth-child(1) {
-  font-size: 2.2rem;
+  max-width: 560px;
+}
+
+.landingMainContainer h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.landingMainContainer p {
+  margin-top: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
 }
 
 .landingMainContainer>div:nth-child(1) div[role='button'] {
-  background: #D97500;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
   width: fit-content;
-  padding: 1rem;
-  border-radius: 20px;
-  margin-top: 1.9rem;
+  padding: 0.9rem 1.8rem;
+  border-radius: 999px;
+  margin-top: 2rem;
+  box-shadow: 0 10px 30px rgba(255, 95, 57, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.landingMainContainer>div:nth-child(1) div[role='button']:hover {
+  transform: translateY(-2px) scale(1.02);
 }
 
 .landingMainContainer>div:nth-child(1) div[role='button'] a {
   text-decoration: none;
   color: white;
-  font-size: 1.7rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .landingMainContainer>div:nth-child(2) img {
-  height: 70vh;
+  height: min(60vh, 480px);
   width: auto;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.5));
 }
 
+/* ---------- Home / dashboard ---------- */
 .navBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-inline: 20px;
-  text-align: center;
-
+  padding: 1.2rem clamp(1rem, 4vw, 2.5rem);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--color-border);
 }
+
+.navBar h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.navBar p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .meetContainer {
   display: flex;
-  padding-inline: 20px;
-  height: 80vh;
-  gap: 10vw;
+  flex-wrap: wrap-reverse;
+  padding-inline: clamp(1rem, 6vw, 4rem);
+  min-height: 75vh;
+  gap: 3rem;
   justify-content: center;
+  align-items: center;
 }
 
-
-
 .leftPanel {
-  height: 100%;
   display: flex;
   align-items: center;
+  max-width: 560px;
+}
 
+.leftPanel h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 1.5rem;
 }
 
 .rightPanel {
@@ -90,7 +156,8 @@
 }
 
 .rightPanel > img {
-  width: 30vw;
+  width: min(30vw, 380px);
   height: auto;
   border-radius: 20px;
+  filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.4));
 }

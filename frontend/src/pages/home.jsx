@@ -26,23 +26,25 @@ function HomeComponent() {
 
                 <div style={{ display: "flex", alignItems: "center" }}>
 
-                    <h2>Apna Video Call</h2>
+                    <h2>MeetFlow</h2>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <IconButton onClick={
                         () => {
                             navigate("/history")
                         }
-                    }>
+                    } style={{ color: "white" }}>
                         <RestoreIcon />
                     </IconButton>
                     <p>History</p>
 
-                    <Button onClick={() => {
-                        localStorage.removeItem("token")
-                        navigate("/auth")
-                    }}>
+                    <Button
+                        style={{ color: "white", marginLeft: "12px" }}
+                        onClick={() => {
+                            localStorage.removeItem("token")
+                            navigate("/auth")
+                        }}>
                         Logout
                     </Button>
                 </div>
@@ -54,12 +56,39 @@ function HomeComponent() {
             <div className="meetContainer">
                 <div className="leftPanel">
                     <div>
-                        <h2>Providing Quality Video Call Just Like Quality Education</h2>
+                        <h2>Crystal-clear video calls, made simple.</h2>
 
-                        <div style={{ display: 'flex', gap: "10px" }}>
+                        <div style={{ display: 'flex', gap: "10px", flexWrap: "wrap" }}>
 
-                            <TextField onChange={e => setMeetingCode(e.target.value)} id="outlined-basic" label="Meeting Code" variant="outlined" />
-                            <Button onClick={handleJoinVideoCall} variant='contained'>Join</Button>
+                            <TextField
+                                onChange={e => setMeetingCode(e.target.value)}
+                                id="outlined-basic"
+                                label="Meeting Code"
+                                variant="outlined"
+                                sx={{
+                                    input: { color: "white" },
+                                    label: { color: "rgba(255,255,255,0.6)" },
+                                    "& .MuiOutlinedInput-root": {
+                                        borderRadius: "10px",
+                                        "& fieldset": { borderColor: "rgba(255,255,255,0.25)" },
+                                        "&:hover fieldset": { borderColor: "rgba(255,255,255,0.5)" },
+                                    },
+                                }}
+                            />
+                            <Button
+                                onClick={handleJoinVideoCall}
+                                variant='contained'
+                                disabled={!meetingCode.trim()}
+                                sx={{
+                                    background: "linear-gradient(135deg, #ff9839, #ff5f39)",
+                                    borderRadius: "10px",
+                                    paddingInline: "1.6rem",
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Join
+                            </Button>
 
                         </div>
                     </div>

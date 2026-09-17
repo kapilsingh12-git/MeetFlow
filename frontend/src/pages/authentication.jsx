@@ -57,12 +57,11 @@ export default function Authentication() {
                 setFormState(0)
                 setPassword("")
             }
-        } catch (err) {
-
-            console.log(err);
-            let message = (err.response.data.message);
-            setError(message);
-        }
+       } catch (err) {
+    console.log(err);
+    const message = err?.response?.data?.message || "Something went wrong. Please try again.";
+    setError(message);
+}
     }
 
 
@@ -75,14 +74,13 @@ export default function Authentication() {
                     xs={false}
                     sm={4}
                     md={7}
-                    sx={{
-                        backgroundImage: 'url(https://source.unsplash.com/random?wallpapers)',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundColor: (t) =>
-                            t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                    }}
+                   sx={{
+    backgroundImage:
+        'linear-gradient(180deg, rgba(5,6,15,0.55) 0%, rgba(5,6,15,0.9) 100%), url(/background.png)',
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+}}
                 />
                 <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
                     <Box

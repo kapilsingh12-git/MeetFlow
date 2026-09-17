@@ -6,19 +6,20 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
-    "prod": "pm2 src/app.js"
+    "prod": "pm2 start src/app.js --name meetflow-backend"
   },
   "author": "kapil singh",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
-    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
     "express": "^5.2.1",
     "http-status": "^2.1.0",
-    "mexpress": "^1.1.2",
     "mongoose": "^9.2.4",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
   }
 }
