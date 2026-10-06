@@ -28,6 +28,8 @@ export default function VideoMeetComponent() {
     const socketRef = useRef();
     const socketIdRef = useRef();
     const localVideoref = useRef();
+    // Peer connections live on a ref scoped to this component instance,
+    // instead of a module-level object shared across every mount/meeting.
     const connectionsRef = useRef({});
 
     const [videoAvailable, setVideoAvailable] = useState(true);
@@ -51,6 +53,7 @@ export default function VideoMeetComponent() {
     const [videos, setVideos] = useState([]);
     const videoRef = useRef([]);
 
+    // --- Lobby: request camera/mic ONCE up front, in a single call ---
     useEffect(() => {
         let cancelled = false;
 
@@ -66,6 +69,8 @@ export default function VideoMeetComponent() {
                 setVideoAvailable(true);
                 setAudioAvailable(true);
             } catch (err) {
+                // Combined request failed — fall back to whichever device is actually available
+                // instead of assuming both are unusable.
                 let videoOk = false;
                 let audioOk = false;
                 try {
@@ -114,12 +119,25 @@ export default function VideoMeetComponent() {
         };
     }, []);
 
+    // --- Cleanup everything when leaving the page ---
     useEffect(() => {
         return () => {
             cleanupCall();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // The lobby preview and the in-call self-view are two separate <video>
+    // elements (only one is mounted at a time), sharing the same ref. When
+    // we switch from the lobby to the call, a brand-new <video> element
+    // mounts and its srcObject is empty — reattach the existing camera
+    // stream to it here, otherwise your own preview shows nothing even
+    // though the camera is on and the call itself works fine.
+    useEffect(() => {
+        if (!askForUsername && localVideoref.current && window.localStream) {
+            localVideoref.current.srcObject = window.localStream;
+        }
+    }, [askForUsername]);
 
     const cleanupCall = () => {
         try {
@@ -138,12 +156,13 @@ export default function VideoMeetComponent() {
         }
     };
 
-    const attachLocalTracksToPeer = (pc) => {
-        if (!window.localStream) return;
-        window.localStream.getTracks().forEach(track => {
-            pc.addTrack(track, window.localStream);
-        });
-    };
+  const attachLocalTracksToPeer = (pc) => {
+
+    if (!window.localStream) return;
+    window.localStream.getTracks().forEach(track => {
+        pc.addTrack(track, window.localStream);
+    });
+};
 
     const renegotiateWith = (id) => {
         const pc = connectionsRef.current[id];
@@ -194,75 +213,102 @@ export default function VideoMeetComponent() {
         setConnecting(true);
         socketRef.current = io(server_url);
 
+        // IMPORTANT: these listeners are registered ONCE, outside 'connect'.
+        // Socket.IO's 'connect' event fires again on every reconnect (e.g. a
+        // brief network hiccup, or the free-tier host waking up mid-session).
+        // Registering listeners inside 'connect' would register them again
+        // each time, so the SAME event would fire the handler multiple times
+        // — which was causing a second, stale offer to be sent on an already
+        // -established connection (the "m-lines" error breaking video).
         socketRef.current.on('signal', gotMessageFromServer);
+
+        socketRef.current.on('chat-message', addMessage);
+
+        socketRef.current.on('user-left', (id) => {
+            if (connectionsRef.current[id]) {
+                connectionsRef.current[id].close();
+                delete connectionsRef.current[id];
+            }
+            setVideos(videos => videos.filter(v => v.socketId !== id));
+        });
+
+        socketRef.current.on('user-joined', (id, clients) => {
+            clients.forEach((socketListId) => {
+                if (socketListId === socketIdRef.current) return; // never connect to yourself
+                if (connectionsRef.current[socketListId]) return; // already connected
+
+                const pc = new RTCPeerConnection(peerConfigConnections);
+                connectionsRef.current[socketListId] = pc;
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate != null) {
+                        socketRef.current.emit('signal', socketListId, JSON.stringify({ ice: event.candidate }));
+                    }
+                };
+
+                pc.onconnectionstatechange = () => {
+                    console.log(`[${socketListId}] connectionState:`, pc.connectionState);
+                    if (pc.connectionState === 'connected') {
+                        setConnecting(false);
+                    }
+                };
+
+                pc.oniceconnectionstatechange = () => {
+                    console.log(`[${socketListId}] iceConnectionState:`, pc.iceConnectionState);
+                };
+
+                pc.ontrack = (event) => {
+                    console.log(`[${socketListId}] ontrack fired, streams:`, event.streams);
+                    const stream = event.streams[0];
+                    setVideos(prev => {
+                        const exists = prev.find(v => v.socketId === socketListId);
+                        let updated;
+                        if (exists) {
+                            updated = prev.map(v => v.socketId === socketListId ? { ...v, stream } : v);
+                        } else {
+                            updated = [...prev, { socketId: socketListId, stream, autoplay: true, playsinline: true }];
+                        }
+                        videoRef.current = updated;
+                        return updated;
+                    });
+                };
+
+                attachLocalTracksToPeer(pc);
+            });
+
+            // If it's us who just (re)joined, offer to everyone already in the room
+            // that we don't already have a live connection to.
+            if (id === socketIdRef.current) {
+                Object.keys(connectionsRef.current).forEach(id2 => {
+                    if (id2 === socketIdRef.current) return;
+                    const pc = connectionsRef.current[id2];
+                    // Only offer to peers we haven't already negotiated with —
+                    // never re-offer on a connection that already has a local
+                    // description, since that's what produces the m-line
+                    // ordering error.
+                    if (pc.signalingState === 'stable' && !pc.currentLocalDescription) {
+                        renegotiateWith(id2);
+                    }
+                });
+                setConnecting(false);
+            }
+        });
 
         socketRef.current.on('connect', () => {
             socketIdRef.current = socketRef.current.id;
             socketRef.current.emit('join-call', window.location.href);
-
-            socketRef.current.on('chat-message', addMessage);
-
-            socketRef.current.on('user-left', (id) => {
-                if (connectionsRef.current[id]) {
-                    connectionsRef.current[id].close();
-                    delete connectionsRef.current[id];
-                }
-                setVideos(videos => videos.filter(v => v.socketId !== id));
-            });
-
-            socketRef.current.on('user-joined', (id, clients) => {
-                clients.forEach((socketListId) => {
-                    if (connectionsRef.current[socketListId]) return;
-
-                    const pc = new RTCPeerConnection(peerConfigConnections);
-                    connectionsRef.current[socketListId] = pc;
-
-                    pc.onicecandidate = (event) => {
-                        if (event.candidate != null) {
-                            socketRef.current.emit('signal', socketListId, JSON.stringify({ ice: event.candidate }));
-                        }
-                    };
-
-                    pc.ontrack = (event) => {
-                        const stream = event.streams[0];
-                        setVideos(prev => {
-                            const exists = prev.find(v => v.socketId === socketListId);
-                            let updated;
-                            if (exists) {
-                                updated = prev.map(v => v.socketId === socketListId ? { ...v, stream } : v);
-                            } else {
-                                updated = [...prev, { socketId: socketListId, stream, autoplay: true, playsinline: true }];
-                            }
-                            videoRef.current = updated;
-                            return updated;
-                        });
-                    };
-
-                    pc.onconnectionstatechange = () => {
-                        if (pc.connectionState === 'connected') {
-                            setConnecting(false);
-                        }
-                    };
-
-                    attachLocalTracksToPeer(pc);
-                });
-
-                if (id === socketIdRef.current) {
-                    Object.keys(connectionsRef.current).forEach(id2 => {
-                        if (id2 === socketIdRef.current) return;
-                        renegotiateWith(id2);
-                    });
-                    setConnecting(false);
-                }
-            });
         });
 
         socketRef.current.on('connect_error', () => {
+            // Free-tier hosts (e.g. Render) can take 20-50s to cold-start.
+            // Keep the user informed instead of leaving a silent spinner.
             setConnecting(true);
         });
     };
 
     const handleVideo = () => {
+        // Toggle the existing track instead of tearing down and re-requesting
+        // media + renegotiating with every peer — this is instant.
         const next = !video;
         setVideo(next);
         if (window.localStream) {
@@ -325,6 +371,7 @@ export default function VideoMeetComponent() {
             }
             if (localVideoref.current) localVideoref.current.srcObject = window.localStream;
 
+            // When the user stops sharing via the browser's native "Stop sharing" control
             screenTrack.onended = () => {
                 stopScreenShare();
             };
